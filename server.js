@@ -9,7 +9,7 @@ app.use(bodyParser.json());
 const ethProvider = "https://your-custom-rpc.com"; // Update with your custom RPC URL
 const web3 = new Web3(new Web3.providers.HttpProvider(ethProvider));
 const expectedAmount = web3.utils.toWei("0.001", "ether");
-const receiverAddress = "0xYourEthereumAddress"; // Update with your ETH receiving address
+const receiverAddress = "0xCfC11BB9BBd7aAE2B34025f9A282e3850edd2A40"; // Update with your ETH receiving address
 const tokenTransferApi = "https://your-token-bridge.com/api/transfer"; // Update with actual token transfer API
 
 app.post("/api/transfer", async (req, res) => {
