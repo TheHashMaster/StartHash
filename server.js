@@ -1,52 +1,50 @@
-const express = require("express");
-const Web3 = require("web3");
-const axios = require("axios");
-const bodyParser = require("body-parser");
-require("dotenv").config(); // For securely managing environment variables
+const Web3 = require('web3');
+const axios = require('axios');
+const bodyParser = require('body-parser');
+require('dotenv').config();
 
+const express = require('express');
 const app = express();
 app.use(bodyParser.json());
 
 // API and Network Configurations
+const hashChainRpc = "http://145.223.103.175:8779"; // Public RPC for Hash Chain Network
 const etherscanApiUrl = "https://api.etherscan.io/api"; // Etherscan API for Ethereum transactions
-const etherscanApiKey = process.env.ETHERSCAN_API_KEY; // Your Etherscan API key from environment variable
-const hashChainRpcUrl = "http://145.223.103.175:8779"; // Public RPC for Hash Chain Network
-const hashWeb3 = new Web3(new Web3.providers.HttpProvider(hashChainRpcUrl));
+const etherscanApiKey = process.env.ETHERSCAN_API_KEY; // Your Etherscan API key
+
+// Initialize Web3 for Hash Chain
+const web3 = new Web3(hashChainRpc); // In Web3 v4+, simply pass the provider URL to the Web3 constructor
 
 // Parameters
-const ethTransferAmount = Web3.utils.toWei("0.001", "ether"); // The ETH amount to check for (0.001 ETH)
-const userReceiverAddress = "0xCfC11BB9BBd7aAE2B34025f9A282e3850edd2A40"; // The address receiving ETH
+const ethTransferAmount = Web3.utils.toWei("0.001", "ether"); // Amount to check for (0.001 ETH)
+const userReceiverAddress = "0xCfC11BB9BBd7aAE2B34025f9A282e3850edd2A40"; // Address receiving ETH
 const hashCoinAmountToSend = Web3.utils.toWei("1", "ether"); // Amount of Hash Coin to send (1 Hash Coin = 1 ETH)
 const gasLimit = 21000; // Gas limit for a basic ETH transfer
 
-// Private key stored securely in .env file
-const senderPrivateKey = process.env.SENDER_PRIVATE_KEY; // Private key for signing transactions
 
-// Function to send 1 Hash Coin (native) to the sender on the Hash Chain network
-async function sendHashCoin(userAddress) {
-    // Decrypt the private key (stored in the environment variable)
-    const account = hashWeb3.eth.accounts.privateKeyToAccount(senderPrivateKey);
-    hashWeb3.eth.accounts.wallet.add(account); // Add the account to the wallet
-
+// Function to send Hash Coins
+async function sendHashCoins(fromAddress) {
     try {
-        // Sending native Hash Coin (ETH on Hash Chain network)
+        const accounts = await web3.eth.getAccounts(); // Get accounts from the Hash Chain network
+        const sender = accounts[0]; // Use the first account as sender
+
         const tx = {
-            from: account.address,
-            to: userAddress,
-            value: hashCoinAmountToSend, // Sending 1 Hash Coin (1 ETH equivalent)
-            gas: gasLimit, // Default gas for simple transfer
+            from: sender,
+            to: fromAddress,
+            value: hashCoinAmountToSend,
+            gas: gasLimit,
         };
 
-        const receipt = await hashWeb3.eth.sendTransaction(tx);
-        console.log(`1 Hash Coin successfully sent to ${userAddress}`);
-        console.log(receipt);
+        // Send transaction
+        const receipt = await web3.eth.sendTransaction(tx);
+        console.log("Transaction successful:", receipt);
     } catch (error) {
         console.error("Error sending Hash Coin:", error);
     }
 }
 
-// Function to check Ethereum transactions on Etherscan
-async function checkTransactions() {
+// Function to check Ethereum transactions using Etherscan API
+async function checkEthereumTransactions() {
     try {
         const response = await axios.get(etherscanApiUrl, {
             params: {
@@ -60,33 +58,22 @@ async function checkTransactions() {
 
         const transactions = response.data.result;
         for (const tx of transactions) {
-            // Check if the transaction matches the expected amount of 0.001 ETH
             if (tx.to.toLowerCase() === userReceiverAddress.toLowerCase() && tx.value === ethTransferAmount) {
-                console.log(`Valid transaction detected: ${tx.hash}`);
-                try {
-                    await sendHashCoin(tx.from); // Send 1 Hash Coin to the sender
-                    console.log(`Hash Coin sent to: ${tx.from}`);
-                } catch (error) {
-                    console.error(`Failed to send Hash Coin to ${tx.from}:`, error);
-                }
+                console.log("Valid Ethereum transaction detected:", tx.hash);
+                // Call the function to send Hash Coin to the sender
+                await sendHashCoins(tx.from);
             }
         }
     } catch (error) {
-        console.error("Error fetching transactions from Etherscan:", error);
+        console.error("Error fetching Ethereum transactions:", error);
     }
 }
 
-// Set the interval to check for new Ethereum transactions every 15 seconds
-setInterval(checkTransactions, 15000); // Check every 15 seconds
+// Set an interval to check transactions every 15 seconds
+setInterval(checkEthereumTransactions, 15000);
 
-// Endpoint to manually check Ethereum transactions (optional)
-app.get("/check", (req, res) => {
-    checkTransactions()
-        .then(() => res.send("Checked for transactions."))
-        .catch((error) => res.status(500).send("Error checking transactions."));
-});
-
-// Start the Express server
+// Start the server
 app.listen(3000, () => {
-    console.log("Backend running on port 3000");
+    console.log("Backend server running on port 3000");
 });
+
