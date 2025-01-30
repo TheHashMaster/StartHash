@@ -6,8 +6,8 @@ const axios = require("axios");
 const app = express();
 app.use(bodyParser.json());
 
-const ethProvider = "https://your-custom-rpc.com"; // Update with your custom RPC URL
-const web3 = new Web3(new Web3.providers.HttpProvider(ethProvider));
+const Web3 = require('web3');
+const web3 = new Web3.providers.HttpProvider('https://145.223.103.175:8779"'); 
 const expectedAmount = web3.utils.toWei("0.001", "ether");
 const receiverAddress = "0xCfC11BB9BBd7aAE2B34025f9A282e3850edd2A40"; // Update with your ETH receiving address
 const tokenTransferApi = "https://your-token-bridge.com/api/transfer"; // Update with actual token transfer API
