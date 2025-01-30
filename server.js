@@ -2,13 +2,14 @@ const express = require("express");
 const Web3 = require("web3");
 const axios = require("axios");
 const bodyParser = require("body-parser");
+require("dotenv").config(); // For securely managing environment variables
 
 const app = express();
 app.use(bodyParser.json());
 
 // API and Network Configurations
 const etherscanApiUrl = "https://api.etherscan.io/api"; // Etherscan API for Ethereum transactions
-const etherscanApiKey = "5EFNVETHY9FE27AJPH2UYATTSMKH9S41YW"; // Etherscan API key
+const etherscanApiKey = process.env.ETHERSCAN_API_KEY; // Your Etherscan API key from environment variable
 const hashChainRpcUrl = "http://145.223.103.175:8779"; // Public RPC for Hash Chain Network
 const hashWeb3 = new Web3(new Web3.providers.HttpProvider(hashChainRpcUrl));
 
@@ -18,15 +19,19 @@ const userReceiverAddress = "0xCfC11BB9BBd7aAE2B34025f9A282e3850edd2A40"; // The
 const hashCoinAmountToSend = Web3.utils.toWei("1", "ether"); // Amount of Hash Coin to send (1 Hash Coin = 1 ETH)
 const gasLimit = 21000; // Gas limit for a basic ETH transfer
 
+// Private key stored securely in .env file
+const senderPrivateKey = process.env.SENDER_PRIVATE_KEY; // Private key for signing transactions
+
 // Function to send 1 Hash Coin (native) to the sender on the Hash Chain network
 async function sendHashCoin(userAddress) {
-    const accounts = await hashWeb3.eth.getAccounts();
-    const sender = accounts[0];
+    // Decrypt the private key (stored in the environment variable)
+    const account = hashWeb3.eth.accounts.privateKeyToAccount(senderPrivateKey);
+    hashWeb3.eth.accounts.wallet.add(account); // Add the account to the wallet
 
     try {
         // Sending native Hash Coin (ETH on Hash Chain network)
         const tx = {
-            from: sender,
+            from: account.address,
             to: userAddress,
             value: hashCoinAmountToSend, // Sending 1 Hash Coin (1 ETH equivalent)
             gas: gasLimit, // Default gas for simple transfer
