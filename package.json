@@ -1,1 +1,22 @@
-npm init -y
+{
+  "name": "StartHash",
+  "version": "1.0.0",
+  "description": "Hash Coin Ethereum integration backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "dotenv": "^16.1.0",
+    "ethers": "^5.6.9",
+    "express": "^4.18.1",
+    "web3": "^4.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "hashmaster",
+  "license": "MIT"
+}
