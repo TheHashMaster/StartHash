@@ -1,0 +1,67 @@
+const Web3 = require('web3');
+require('dotenv').config();
+
+// Setup Web3 (for Ethereum)
+const web3 = new Web3(new Web3.providers.HttpProvider(process.env.ETHEREUM_RPC_URL));
+
+// Hash Chain Contract and Backend Details
+const contractABI = [/* Contract ABI from Remix/Truffle */];
+const contractAddress = process.env.CONTRACT_ADDRESS; // Deployed contract on Hash Chain
+const backendAddress = process.env.BACKEND_WALLET_ADDRESS;
+const privateKey = process.env.BACKEND_PRIVATE_KEY;
+const hashTokenAddress = process.env.HASH_TOKEN_ADDRESS;
+
+const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+async function sendHashTokenToSender(depositAddress) {
+    const account = web3.eth.accounts.privateKeyToAccount(privateKey);
+
+    // Check if depositAddress is provided
+    if (!depositAddress) {
+        console.error("Deposit address is required!");
+        return;
+    }
+
+    // Set up the transaction to send Hash tokens to the deposit address
+    const tx = {
+        from: account.address,
+        to: hashTokenAddress, // Address of the Hash token contract
+        data: contract.methods.transfer(depositAddress, Web3.utils.toWei("1", "ether")).encodeABI(), // Transfer 1 Hash token to the sender
+        gas: 2000000, // Set appropriate gas limit for the call
+    };
+
+    // Sign and send the transaction
+    try {
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+        console.log(`Transaction successful: ${receipt.transactionHash}`);
+    } catch (error) {
+        console.error("Error sending Hash token:", error);
+    }
+}
+
+// Function to detect deposit via Etherscan API (simplified example)
+async function detectETHDeposit() {
+    const response = await axios.get(`https://api.etherscan.io/api`, {
+        params: {
+            module: 'account',
+            action: 'txlist',
+            address: process.env.ETH_ADDRESS, // The address where ETH is sent
+            startblock: 0,
+            endblock: 99999999,
+            sort: 'asc',
+            apikey: process.env.ETHERSCAN_API_KEY,
+        },
+    });
+
+    // Check for incoming ETH deposits (simplified)
+    response.data.result.forEach(async (tx) => {
+        if (tx.to.toLowerCase() === process.env.ETH_ADDRESS.toLowerCase() && parseInt(tx.value) > 0) {
+            console.log('ETH Deposit detected from:', tx.from);
+            await sendHashTokenToSender(tx.from); // Send Hash token to sender
+        }
+    });
+}
+
+// Call detectETHDeposit every 15 seconds
+setInterval(detectETHDeposit, 15000);
